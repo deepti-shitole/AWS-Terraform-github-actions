@@ -6,34 +6,33 @@ on:
 
 jobs:
   terraform:
-    name: '3-tier archi on aws'  
-    runs-on: ubuntu-latest    
-  
+    name: "3-tier archi on AWS"  
+    runs-on: ubuntu-latest 
 
-env:
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  AWS_REGION: ap-south-1
-  TERRAFORM_VER: 1.5.1 
-  TERRAFORM_PATH: .  
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ap-south-1
+      TERRAFORM_VER: 1.5.1 
+      TERRAFORM_PATH: .
 
-steps:
-- name: Checkout Repository
-  uses: actions/checkout@v2
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-- name: Setup Terraform
-  uses: hashicorp/setup-terraform@v3
-  with:
-      terraform_version: ${{ env.TERRAFORM_VER }}
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ env.TERRAFORM_VER }}
 
-- name: Terraform Init
-  working-directory: ${{ env.TERRAFORM_PATH }}
-  run: terraform init
+      - name: Terraform Init
+        working-directory: ${{ env.TERRAFORM_PATH }}
+        run: terraform init
 
-- name: Terraform Plan
-  working-directory: ${{ env.TERRAFORM_PATH }}
-  run: terraform plan
+      - name: Terraform Plan
+        working-directory: ${{ env.TERRAFORM_PATH }}
+        run: terraform plan
 
-- name: Terraform Apply
-  working-directory: ${{ env.TERRAFORM_PATH }}
-  run: terraform apply -auto-approve
+      - name: Terraform Apply
+        working-directory: ${{ env.TERRAFORM_PATH }}
+        run: terraform apply -auto-approve
