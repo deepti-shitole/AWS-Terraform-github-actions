@@ -31,6 +31,22 @@ resource "aws_subnet" "private" {
   )
 }
 
+# Private Subnet in AZ1
+resource "aws_subnet" "private_az1" {
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = "10.0.2.0/24"
+  availability_zone = "ap-south-1a"
+}
+
+# Private Subnet in AZ2
+resource "aws_subnet" "private_az2" {
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = "10.0.3.0/24"
+  availability_zone = "ap-south-1b"
+}
+
+
+
 #6. Set Up Internet Gateway and attach to vpc  
 resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
@@ -131,9 +147,9 @@ resource "aws_instance" "private" {
   ami           = data.aws_ami.amazon_linux.id
   instance_type = var.instance_type
   subnet_id     = aws_subnet.private.id
-  availability_zone = "${data.aws_region.current.name}a"
+  availability_zone = "${data.aws_region.current.name}b"
   vpc_security_group_ids = [ aws_security_group.ssh.id,]
-  key_name = "ssh-key"
+  key_name = "my-new-key"
   
  tags = merge(
     local.common_tags,
@@ -147,7 +163,7 @@ resource "aws_instance" "public" {
   instance_type = var.instance_type
   availability_zone = "${data.aws_region.current.name}a"
   vpc_security_group_ids = [ aws_security_group.ssh.id,]
-  key_name = "ssh-key"
+  key_name = "my-new-key"
 
   tags = merge(
     local.common_tags,
@@ -194,29 +210,31 @@ resource "aws_secretsmanager_secret_version" "rds_password" {
 #13.create a security group for rds that will allow ingress on the DB port from a private instance. Also created a subnet group.
 # RDS Security Group - Allows inbound traffic only from the Application Layer
 resource "aws_security_group" "rds" {
-  vpc_id      = aws_vpc.main.id
+  vpc_id = aws_vpc.main.id
 
-  # Allow inbound PostgreSQL traffic from the Application Layer (Private Subnet)
   ingress {
     from_port   = 5432
     to_port     = 5432
     protocol    = "tcp"
-     cidr_blocks = [aws_subnet.private.cidr_block] 
+    cidr_blocks = [aws_subnet.private_az1.cidr_block, aws_subnet.private_az2.cidr_block] 
   }
 
-  # Allow all outbound traffic (for DB updates, backups, etc.)
   egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
 }
 
+
+
 # RDS Subnet Group - Required for Multi-AZ and Private Subnet Deployment
+# RDS Subnet Group - Required for Multi-AZ Deployment
 resource "aws_db_subnet_group" "main" {
-  name       = "${var.prefix}-db-subnet-group"
+  name        = "${var.prefix}-db-subnet-group"
   description = "Subnet group for RDS in private subnets"
-  subnet_ids  = [aws_subnet.private.id] # Ensure these are private subnets
+  
+  # Include at least two subnets from different Availability Zones
+  subnet_ids  = [aws_subnet.private_az1.id, aws_subnet.private_az2.id]  
 }
