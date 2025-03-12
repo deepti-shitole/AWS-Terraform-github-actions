@@ -38,5 +38,5 @@ variable "db_name" {
 variable "db_username" {
   description = "Username for the PostgreSQL database"
   type        = string
-  default     = "admin"  # Change this as needed
+  default     = "dbadmin"  # Change this as needed
 }
